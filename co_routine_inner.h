@@ -48,10 +48,10 @@ struct stShareStack_t
 
 struct stCoRoutine_t
 {
-	stCoRoutineEnv_t *env;              //协程运行环境
-	pfn_co_routine_t pfn;               //执行函数
+	stCoRoutineEnv_t *env;              //指向协程运行环境，各协程共享
+	pfn_co_routine_t pfn;               //指向执行函数  TODO
 	void *arg;                          //执行函数参数
-	coctx_t ctx;                        //用于切换时保存上下文信息，包含寄存器
+	coctx_t ctx;                        //切换时保存上下文(寄存器)信息
 
 	char cStart;                        //是否开始，在调用co_resume时设置为1, co_reset时设置为0
 	char cEnd;                          //是否结束, TODO, co_reset时设置为0

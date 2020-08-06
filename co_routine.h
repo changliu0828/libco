@@ -47,11 +47,10 @@ typedef void *(*pfn_co_routine_t)( void * );
 //2.co_routine
 
 /*  协程创建接口
- *  参数：
- *  co          :协程主数据
- *  attr        :协程可配置属性, 包括栈大小、共享栈地址
- *  routine     :协程调用函数
- *  arg         :协程调用函数参数
+ *  @co         :协程主数据
+ *  @attr       :协程可配置属性, 包括栈大小、共享栈地址
+ *  @pfn        :协程调用函数
+ *  @arg        :协程调用函数参数
  */
 int 	co_create( stCoRoutine_t **co,const stCoRoutineAttr_t *attr,void *(*routine)(void*),void *arg );
 

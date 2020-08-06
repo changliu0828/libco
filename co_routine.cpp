@@ -50,13 +50,13 @@ struct stCoEpoll_t;
 
 struct stCoRoutineEnv_t
 {
-	stCoRoutine_t *pCallStack[ 128 ];
-	int iCallStackSize;
-	stCoEpoll_t *pEpoll;
+	stCoRoutine_t *pCallStack[ 128 ];   //所有协程的调用栈
+	int iCallStackSize;                 //pCallStack栈顶索引
+	stCoEpoll_t *pEpoll;                //epoll封装
 
 	//for copy stack log lastco and nextco
-	stCoRoutine_t* pending_co;
-	stCoRoutine_t* occupy_co;
+	stCoRoutine_t* pending_co;          //TODO
+	stCoRoutine_t* occupy_co;           //TODO
 };
 //int socket(int domain, int type, int protocol);
 void co_log_err( const char *fmt,... )
@@ -311,16 +311,16 @@ struct stTimeoutItemLink_t;
 struct stTimeoutItem_t;
 struct stCoEpoll_t
 {
-	int iEpollFd;
-	static const int _EPOLL_SIZE = 1024 * 10;
+	int iEpollFd;                                   //EpollFd
+	static const int _EPOLL_SIZE = 1024 * 10;       //epoll_wait单次最大返回事件数量
 
-	struct stTimeout_t *pTimeout;
+	struct stTimeout_t *pTimeout;                   //超时管理  TODO
 
 	struct stTimeoutItemLink_t *pstTimeoutList;
 
-	struct stTimeoutItemLink_t *pstActiveList;
+	struct stTimeoutItemLink_t *pstActiveList;          
 
-	co_epoll_res *result; 
+	co_epoll_res *result;                           //epoll_wait结果
 
 };
 typedef void (*OnPreparePfn_t)( stTimeoutItem_t *,struct epoll_event &ev, stTimeoutItemLink_t *active );
@@ -457,32 +457,39 @@ static int CoRoutineFunc( stCoRoutine_t *co,void * )
 }
 
 
+/*
+ * 创建协程数据
+ * @env     协程运行环境
+ * @attr    协程运行参数
+ * @pfn     函数指针
+ * @arg     函数参数
+ */
 
 struct stCoRoutine_t *co_create_env( stCoRoutineEnv_t * env, const stCoRoutineAttr_t* attr,
 		pfn_co_routine_t pfn,void *arg )
 {
 
-	stCoRoutineAttr_t at;
+	stCoRoutineAttr_t at;                           //一个临时结构体，方便调用接口
 	if( attr )
 	{
-		memcpy( &at,attr,sizeof(at) );
+		memcpy( &at,attr,sizeof(at) );              //拷贝attr
 	}
-	if( at.stack_size <= 0 )
+	if( at.stack_size <= 0 )                        //调整栈大小
 	{
-		at.stack_size = 128 * 1024;
+		at.stack_size = 128 * 1024;             
 	}
 	else if( at.stack_size > 1024 * 1024 * 8 )
 	{
 		at.stack_size = 1024 * 1024 * 8;
 	}
 
-	if( at.stack_size & 0xFFF ) 
+	if( at.stack_size & 0xFFF )                     //补足4KB整数倍, 对齐
 	{
 		at.stack_size &= ~0xFFF;
 		at.stack_size += 0x1000;
 	}
 
-	stCoRoutine_t *lp = (stCoRoutine_t*)malloc( sizeof(stCoRoutine_t) );
+	stCoRoutine_t *lp = (stCoRoutine_t*)malloc( sizeof(stCoRoutine_t) );    //malloc协程结构体
 	
 	memset( lp,0,(long)(sizeof(stCoRoutine_t))); 
 
@@ -492,14 +499,14 @@ struct stCoRoutine_t *co_create_env( stCoRoutineEnv_t * env, const stCoRoutineAt
 	lp->arg = arg;
 
 	stStackMem_t* stack_mem = NULL;
-	if( at.share_stack )
+	if( at.share_stack )                            //共享栈模式
 	{
-		stack_mem = co_get_stackmem( at.share_stack);
-		at.stack_size = at.share_stack->stack_size;
+		stack_mem = co_get_stackmem( at.share_stack);   //TODO
+		at.stack_size = at.share_stack->stack_size;     //TODO
 	}
 	else
 	{
-		stack_mem = co_alloc_stackmem(at.stack_size);
+		stack_mem = co_alloc_stackmem(at.stack_size);   //创建私有栈
 	}
 	lp->stack_mem = stack_mem;
 
@@ -522,9 +529,9 @@ int co_create( stCoRoutine_t **ppco,const stCoRoutineAttr_t *attr,pfn_co_routine
 {
 	if( !co_get_curr_thread_env() ) 
 	{
-		co_init_curr_thread_env();
+		co_init_curr_thread_env();      //初始化本线程环境，主协程才会调用
 	}
-	stCoRoutine_t *co = co_create_env( co_get_curr_thread_env(), attr, pfn,arg );
+	stCoRoutine_t *co = co_create_env( co_get_curr_thread_env(), attr, pfn,arg );   //创建协程运行环境, 初始化协程数据
 	*ppco = co;
 	return 0;
 }
@@ -737,26 +744,26 @@ static short EpollEvent2Poll( uint32_t events )
 	return e;
 }
 
-static __thread stCoRoutineEnv_t* gCoEnvPerThread = NULL;
+static __thread stCoRoutineEnv_t* gCoEnvPerThread = NULL;   //协程运行环境 __thread:线程私有
 
-void co_init_curr_thread_env()
+void co_init_curr_thread_env()  //初始化协程运行环境
 {
 	gCoEnvPerThread = (stCoRoutineEnv_t*)calloc( 1, sizeof(stCoRoutineEnv_t) );
 	stCoRoutineEnv_t *env = gCoEnvPerThread;
 
-	env->iCallStackSize = 0;
-	struct stCoRoutine_t *self = co_create_env( env, NULL, NULL,NULL );
-	self->cIsMain = 1;
+	env->iCallStackSize = 0;                                            //设置栈顶索引为0
+	struct stCoRoutine_t *self = co_create_env( env, NULL, NULL,NULL ); //创建主协程
+	self->cIsMain = 1;                                                  //主协程标记
 
 	env->pending_co = NULL;
 	env->occupy_co = NULL;
 
-	coctx_init( &self->ctx );
+	coctx_init( &self->ctx );                                           //清空上下文(寄存器)
 
-	env->pCallStack[ env->iCallStackSize++ ] = self;
+	env->pCallStack[ env->iCallStackSize++ ] = self;                    //将自己压入协程调用栈
 
-	stCoEpoll_t *ev = AllocEpoll();
-	SetEpoll( env,ev );
+	stCoEpoll_t *ev = AllocEpoll();                                     //创建Epoll
+	SetEpoll( env,ev );                                                 //设置env->pEpoll
 }
 stCoRoutineEnv_t *co_get_curr_thread_env()
 {

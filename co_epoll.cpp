@@ -34,7 +34,7 @@ int	co_epoll_ctl( int epfd,int op,int fd,struct epoll_event * ev )
 }
 int	co_epoll_create( int size )
 {
-	return epoll_create( size );
+	return epoll_create( size );    //这里size在内核2.6.8之后已经没有实际意义，只要大于0就可以了(兼容老内核)
 }
 
 struct co_epoll_res *co_epoll_res_alloc( int n )

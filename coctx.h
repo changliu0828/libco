@@ -94,7 +94,7 @@ struct coctx_t
 #if defined(__i386__)
 	void *regs[ 8 ];    //详见coctx.cpp
 #else
-	void *regs[ 14 ];   //详见coctx.cpp
+	void *regs[ 14 ];   //详见coctx.cpp, R10, R11为callee saved register, 由被调用函数保存
 #endif
 	size_t ss_size;     //协程栈剩余大小
 	char *ss_sp;        //协程栈栈底地址
