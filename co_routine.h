@@ -28,14 +28,15 @@
 struct stCoRoutine_t;
 struct stShareStack_t;
 
-struct stCoRoutineAttr_t
+//协程可配置属性, 包括栈大小、共享栈地址
+struct stCoRoutineAttr_t    
 {
 	int stack_size;
 	stShareStack_t*  share_stack;
 	stCoRoutineAttr_t()
 	{
-		stack_size = 128 * 1024;
-		share_stack = NULL;
+		stack_size = 128 * 1024;    //默认栈大小为128K
+		share_stack = NULL;         //默认不使用共享栈
 	}
 }__attribute__ ((packed));
 
@@ -45,7 +46,15 @@ typedef void *(*pfn_co_routine_t)( void * );
 
 //2.co_routine
 
+/*  协程创建接口
+ *  参数：
+ *  co          :协程主数据
+ *  attr        :协程可配置属性, 包括栈大小、共享栈地址
+ *  routine     :协程调用函数
+ *  arg         :协程调用函数参数
+ */
 int 	co_create( stCoRoutine_t **co,const stCoRoutineAttr_t *attr,void *(*routine)(void*),void *arg );
+
 void    co_resume( stCoRoutine_t *co );
 void    co_yield( stCoRoutine_t *co );
 void    co_yield_ct(); //ct = current thread

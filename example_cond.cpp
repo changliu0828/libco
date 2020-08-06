@@ -28,8 +28,8 @@ struct stTask_t
 };
 struct stEnv_t
 {
-	stCoCond_t* cond;
-	queue<stTask_t*> task_queue;
+	stCoCond_t* cond;               //条件变量
+	queue<stTask_t*> task_queue;    //任务队列
 };
 void* Producer(void* args)
 {
@@ -70,12 +70,18 @@ int main()
 	stEnv_t* env = new stEnv_t;
 	env->cond = co_cond_alloc();
 
+    //消费者协程
 	stCoRoutine_t* consumer_routine;
+    //创建消费者协程
 	co_create(&consumer_routine, NULL, Consumer, env);
+    //启动消费者协程
 	co_resume(consumer_routine);
 
+    //生产者协程
 	stCoRoutine_t* producer_routine;
+    //创建生产者协程
 	co_create(&producer_routine, NULL, Producer, env);
+    //启动生产者协程
 	co_resume(producer_routine);
 	
 	co_eventloop(co_get_epoll_ct(), NULL, NULL);
