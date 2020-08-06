@@ -32,3 +32,6 @@ README.md
 *.exe
 *.out
 *.app
+
+*.swp
+cscope*
