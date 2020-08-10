@@ -102,5 +102,13 @@ struct coctx_t
 };
 
 int coctx_init( coctx_t *ctx );
+
+/*
+ * @param
+ * ctx  :指向上下文结构体
+ * pfn  :指向调用函数
+ * s    ://TODO           
+ * s1   ://TODO           
+ */
 int coctx_make( coctx_t *ctx,coctx_pfn_t pfn,const void *s,const void *s1 );
 #endif

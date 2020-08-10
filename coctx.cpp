@@ -92,11 +92,11 @@ int coctx_init(coctx_t* ctx) {
 }
 int coctx_make(coctx_t* ctx, coctx_pfn_t pfn, const void* s, const void* s1) {
   // make room for coctx_param
-  char* sp = ctx->ss_sp + ctx->ss_size - sizeof(coctx_param_t);
-  sp = (char*)((unsigned long)sp & -16L);
+  char* sp = ctx->ss_sp + ctx->ss_size - sizeof(coctx_param_t); //ss_sp内存为堆内存，将sp移动到高地址，模拟栈从高到低生长
+  sp = (char*)((unsigned long)sp & -16L);               //i386要求栈起始地址按16字节对齐
 
   coctx_param_t* param = (coctx_param_t*)sp;
-  void** ret_addr = (void**)(sp - sizeof(void*) * 2);
+  void** ret_addr = (void**)(sp - sizeof(void*) * 2);   //返回值地址
   *ret_addr = (void*)pfn;
   param->s1 = s;
   param->s2 = s1;
