@@ -930,11 +930,11 @@ stCoRoutine_t *GetCurrThreadCo( )
 typedef int (*poll_pfn_t)(struct pollfd fds[], nfds_t nfds, int timeout);
 int co_poll_inner( stCoEpoll_t *ctx,struct pollfd fds[], nfds_t nfds, int timeout, poll_pfn_t pollfunc)
 {
-    if (timeout == 0)
+    if (timeout == 0)                           //man poll: Specifying a timeout of zero causes poll() to return immediately, even if no file descriptors are ready.
 	{
 		return pollfunc(fds, nfds, timeout);
 	}
-	if (timeout < 0)
+	if (timeout < 0)                            //man poll: Specifying a negative value in timeout means an infinite timeout.
 	{
 		timeout = INT_MAX;
 	}
