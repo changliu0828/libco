@@ -565,14 +565,14 @@ void co_swap(stCoRoutine_t* curr, stCoRoutine_t* pending_co);
 void co_resume( stCoRoutine_t *co )
 {
 	stCoRoutineEnv_t *env = co->env;
-	stCoRoutine_t *lpCurrRoutine = env->pCallStack[ env->iCallStackSize - 1 ];
-	if( !co->cStart )
+	stCoRoutine_t *lpCurrRoutine = env->pCallStack[ env->iCallStackSize - 1 ];  //当前正在运行的协程
+	if( !co->cStart )                                                           //第一次进入
 	{
-		coctx_make( &co->ctx,(coctx_pfn_t)CoRoutineFunc,co,0 );
-		co->cStart = 1;
+		coctx_make( &co->ctx,(coctx_pfn_t)CoRoutineFunc,co,0 );                 //在co->ctx中保存上下文(当前寄存器)
+		co->cStart = 1;                                                         //标记为已开始
 	}
-	env->pCallStack[ env->iCallStackSize++ ] = co;
-	co_swap( lpCurrRoutine, co );
+	env->pCallStack[ env->iCallStackSize++ ] = co;                              //压入协程调用栈
+	co_swap( lpCurrRoutine, co );                                               //切换
 
 
 }
@@ -628,7 +628,7 @@ void save_stack_buffer(stCoRoutine_t* occupy_co)
 	stStackMem_t* stack_mem = occupy_co->stack_mem;
 	int len = stack_mem->stack_bp - occupy_co->stack_sp;
 
-	if (occupy_co->save_buffer)
+	if (occupy_co->save_buffer) //清空上次的buffer
 	{
 		free(occupy_co->save_buffer), occupy_co->save_buffer = NULL;
 	}
@@ -636,32 +636,37 @@ void save_stack_buffer(stCoRoutine_t* occupy_co)
 	occupy_co->save_buffer = (char*)malloc(len); //malloc buf;
 	occupy_co->save_size = len;
 
-	memcpy(occupy_co->save_buffer, occupy_co->stack_sp, len);
+	memcpy(occupy_co->save_buffer, occupy_co->stack_sp, len);   //保存
 }
 
+/*
+ * 协程上下文切换
+ * @curr        :当前协程
+ * @pending_co  :等待切换协程
+ */
 void co_swap(stCoRoutine_t* curr, stCoRoutine_t* pending_co)
 {
  	stCoRoutineEnv_t* env = co_get_curr_thread_env();
 
-	//get curr stack sp
+	//get curr stack sp                 //TODO
 	char c;
 	curr->stack_sp= &c;
 
-	if (!pending_co->cIsShareStack)
+	if (!pending_co->cIsShareStack)     //pending_co不使用共享栈的情况
 	{
 		env->pending_co = NULL;
 		env->occupy_co = NULL;
 	}
-	else 
+	else                                //pending_co使用共享栈
 	{
 		env->pending_co = pending_co;
 		//get last occupy co on the same stack mem
-		stCoRoutine_t* occupy_co = pending_co->stack_mem->occupy_co;
+		stCoRoutine_t* occupy_co = pending_co->stack_mem->occupy_co;    //获取共享栈当前占用协程
 		//set pending co to occupy thest stack mem;
-		pending_co->stack_mem->occupy_co = pending_co;
+		pending_co->stack_mem->occupy_co = pending_co;                  //设置pending_co占用共享栈
 
-		env->occupy_co = occupy_co;
-		if (occupy_co && occupy_co != pending_co)
+		env->occupy_co = occupy_co;                                 
+		if (occupy_co && occupy_co != pending_co)                       //保存occupy_co的栈
 		{
 			save_stack_buffer(occupy_co);
 		}
@@ -670,6 +675,8 @@ void co_swap(stCoRoutine_t* curr, stCoRoutine_t* pending_co)
 	//swap context
 	coctx_swap(&(curr->ctx),&(pending_co->ctx) );
 
+    //此时已经切换到pending_co执行了，co_resum之后才会执行下面部分
+    
 	//stack buffer may be overwrite, so get again;
 	stCoRoutineEnv_t* curr_env = co_get_curr_thread_env();
 	stCoRoutine_t* update_occupy_co =  curr_env->occupy_co;
@@ -680,7 +687,7 @@ void co_swap(stCoRoutine_t* curr, stCoRoutine_t* pending_co)
 		//resume stack buffer
 		if (update_pending_co->save_buffer && update_pending_co->save_size > 0)
 		{
-			memcpy(update_pending_co->stack_sp, update_pending_co->save_buffer, update_pending_co->save_size);
+			memcpy(update_pending_co->stack_sp, update_pending_co->save_buffer, update_pending_co->save_size);  //恢复栈空间
 		}
 	}
 }

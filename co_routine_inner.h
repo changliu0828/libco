@@ -27,21 +27,20 @@ struct stCoSpec_t
 	void *value;
 };
 
-struct stStackMem_t
-{
-	stCoRoutine_t* occupy_co;
-	int stack_size;
-	char* stack_bp; //stack_buffer + stack_size
-	char* stack_buffer;
+struct stStackMem_t                                 //单个共享栈                             ------   
+{                                                   //                                  |      |
+	stCoRoutine_t* occupy_co;                       //指向当前占用共享栈的协程          | used | 
+	int stack_size;                                 //空闲大小                          |------|  <- stack_bp    
+	char* stack_bp; //stack_buffer + stack_size     //base pointer                      | free |    
+	char* stack_buffer;                             //栈地址                            |      |
+};                                                  //                                   ------   <- stack_buffer
 
-};
-
-struct stShareStack_t
+struct stShareStack_t                               //共享栈
 {
-	unsigned int alloc_idx;
-	int stack_size;
-	int count;
-	stStackMem_t** stack_array;
+	unsigned int alloc_idx;                         //共享栈数组索引 TODO
+	int stack_size;                                 //单个共享栈大小
+	int count;                                      //共享栈个数
+	stStackMem_t** stack_array;                     //共享栈数组
 };
 
 
@@ -68,7 +67,7 @@ struct stCoRoutine_t
 	//save satck buffer while confilct on same stack_buffer;
 	char* stack_sp;                     //TODO 
 	unsigned int save_size;             //TODO
-	char* save_buffer;                  //TODO
+	char* save_buffer;                  //用与co_swap切换出共享栈时，保存当前栈信息
 
 	stCoSpec_t aSpec[1024];             //TODO
 
