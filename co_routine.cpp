@@ -693,31 +693,30 @@ void co_swap(stCoRoutine_t* curr, stCoRoutine_t* pending_co)
 }
 
 
-
 //int poll(struct pollfd fds[], nfds_t nfds, int timeout);
 // { fd,events,revents }
 struct stPollItem_t ;
 struct stPoll_t : public stTimeoutItem_t 
 {
-	struct pollfd *fds;
+	struct pollfd *fds;     //指向poll中的事件
 	nfds_t nfds; // typedef unsigned long int nfds_t;
 
 	stPollItem_t *pPollItems;
 
-	int iAllEventDetach;
+	int iAllEventDetach;    //标识是否处理过此stPoll_t
 
 	int iEpollFd;
 
-	int iRaiseCnt;
+	int iRaiseCnt;          //触发的事件数
 
 
 };
 struct stPollItem_t : public stTimeoutItem_t
 {
-	struct pollfd *pSelf;
-	stPoll_t *pPoll;
+	struct pollfd *pSelf;           //指向stPoll_t中对应的pollfd
+	stPoll_t *pPoll;                //指向所属的stPoll_t
 
-	struct epoll_event stEvent;
+	struct epoll_event stEvent;     //poll结构转换得到的epoll结构
 };
 /*
  *   EPOLLPRI 		POLLPRI    // There is urgent data to read.  
@@ -785,7 +784,7 @@ void OnPollProcessEvent( stTimeoutItem_t * ap )
 
 void OnPollPreparePfn( stTimeoutItem_t * ap,struct epoll_event &e,stTimeoutItemLink_t *active )
 {
-	stPollItem_t *lp = (stPollItem_t *)ap;
+	stPollItem_t *lp = (stPollItem_t *)ap;                              //TODO
 	lp->pSelf->revents = EpollEvent2Poll( e.events );
 
 
@@ -950,9 +949,9 @@ int co_poll_inner( stCoEpoll_t *ctx,struct pollfd fds[], nfds_t nfds, int timeou
 	arg.nfds = nfds;
 
 	stPollItem_t arr[2];
-	if( nfds < sizeof(arr) / sizeof(arr[0]) && !self->cIsShareStack)
+	if( nfds < sizeof(arr) / sizeof(arr[0]) && !self->cIsShareStack)    //nfds少于2且未使用共享栈的情况下
 	{
-		arg.pPollItems = arr;
+		arg.pPollItems = arr;                   //TODO
 	}	
 	else
 	{
@@ -960,8 +959,8 @@ int co_poll_inner( stCoEpoll_t *ctx,struct pollfd fds[], nfds_t nfds, int timeou
 	}
 	memset( arg.pPollItems,0,nfds * sizeof(stPollItem_t) );
 
-	arg.pfnProcess = OnPollProcessEvent;
-	arg.pArg = GetCurrCo( co_get_curr_thread_env() );
+	arg.pfnProcess = OnPollProcessEvent;                //处理函数, 调用co_resume(arg.pArg), 唤醒参数arg.pArg所指协程
+	arg.pArg = GetCurrCo( co_get_curr_thread_env() );   //处理函数参数, 即当前协程
 	
 	
 	//2. add epoll
@@ -970,16 +969,16 @@ int co_poll_inner( stCoEpoll_t *ctx,struct pollfd fds[], nfds_t nfds, int timeou
 		arg.pPollItems[i].pSelf = arg.fds + i;
 		arg.pPollItems[i].pPoll = &arg;
 
-		arg.pPollItems[i].pfnPrepare = OnPollPreparePfn;
+		arg.pPollItems[i].pfnPrepare = OnPollPreparePfn;    //预处理回调 TODO
 		struct epoll_event &ev = arg.pPollItems[i].stEvent;
 
-		if( fds[i].fd > -1 )
+		if( fds[i].fd > -1 )    //fd有效
 		{
 			ev.data.ptr = arg.pPollItems + i;
 			ev.events = PollEvent2Epoll( fds[i].events );
 
 			int ret = co_epoll_ctl( epfd,EPOLL_CTL_ADD, fds[i].fd, &ev );
-			if (ret < 0 && errno == EPERM && nfds == 1 && pollfunc != NULL)
+			if (ret < 0 && errno == EPERM && nfds == 1 && pollfunc != NULL) //nfds只有一个时，插入epoll失败
 			{
 				if( arg.pPollItems != arr )
 				{
@@ -1115,11 +1114,11 @@ struct stCoCondItem_t
 {
 	stCoCondItem_t *pPrev;
 	stCoCondItem_t *pNext;
-	stCoCond_t *pLink;
+	stCoCond_t *pLink;          //所属stCoCond_t
 
 	stTimeoutItem_t timeout;
 };
-struct stCoCond_t
+struct stCoCond_t               //双向链表
 {
 	stCoCondItem_t *head;
 	stCoCondItem_t *tail;
@@ -1162,16 +1161,16 @@ int co_cond_broadcast( stCoCond_t *si )
 
 int co_cond_timedwait( stCoCond_t *link,int ms )
 {
-	stCoCondItem_t* psi = (stCoCondItem_t*)calloc(1, sizeof(stCoCondItem_t));
-	psi->timeout.pArg = GetCurrThreadCo();
-	psi->timeout.pfnProcess = OnSignalProcessEvent;
+	stCoCondItem_t* psi = (stCoCondItem_t*)calloc(1, sizeof(stCoCondItem_t));   //分配一个stCoCondItem_t
+	psi->timeout.pArg = GetCurrThreadCo();                                      //设置pfnProcess参数为当前协程
+	psi->timeout.pfnProcess = OnSignalProcessEvent;                             //co_resume当前协程
 
 	if( ms > 0 )
 	{
 		unsigned long long now = GetTickMS();
-		psi->timeout.ullExpireTime = now + ms;
+		psi->timeout.ullExpireTime = now + ms;                                  //设置超时时间戳
 
-		int ret = AddTimeout( co_get_curr_thread_env()->pEpoll->pTimeout,&psi->timeout,now );
+		int ret = AddTimeout( co_get_curr_thread_env()->pEpoll->pTimeout,&psi->timeout,now );   //加入时间轮
 		if( ret != 0 )
 		{
 			free(psi);
@@ -1180,7 +1179,7 @@ int co_cond_timedwait( stCoCond_t *link,int ms )
 	}
 	AddTail( link, psi);
 
-	co_yield_ct();
+	co_yield_ct();                                                              //让出cpu
 
 
 	RemoveFromLink<stCoCondItem_t,stCoCond_t>( psi );
