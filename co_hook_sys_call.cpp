@@ -578,7 +578,7 @@ int poll(struct pollfd fds[], nfds_t nfds, int timeout)
 {
 	HOOK_SYS_FUNC( poll );
 
-	if (!co_is_enable_sys_hook() || timeout == 0) {
+	if (!co_is_enable_sys_hook() || timeout == 0) {         //如果没开启hook系统调用或超时时间为0, 调用原生poll
 		return g_sys_poll_func(fds, nfds, timeout);
 	}
     //合并fds中相同项
@@ -587,7 +587,7 @@ int poll(struct pollfd fds[], nfds_t nfds, int timeout)
 	std::map<int, int> m;  // fd --> idx
 	std::map<int, int>::iterator it;
 	if (nfds > 1) {
-		fds_merge = (pollfd *)malloc(sizeof(pollfd) * nfds);
+		fds_merge = (pollfd *)malloc(sizeof(pollfd) * nfds);    //分配nfds个，合并后可能会有多余的
 		for (size_t i = 0; i < nfds; i++) {
 			if ((it = m.find(fds[i].fd)) == m.end()) { 
 				fds_merge[nfds_merge] = fds[i];
