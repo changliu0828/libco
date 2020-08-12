@@ -246,11 +246,11 @@ void inline Join( TLink*apLink,TLink *apOther )
 	TNode *lp = apOther->head;
 	while( lp )
 	{
-		lp->pLink = apLink;
+		lp->pLink = apLink;     //将apOther中的所有项的父指针(pLink)改为apLink
 		lp = lp->pNext;
 	}
 	lp = apOther->head;
-	if(apLink->tail)
+	if(apLink->tail)            //将apOther中的所有项改为接在apLink尾部
 	{
 		apLink->tail->pNext = (TNode*)lp;
 		lp->pPrev = apLink->tail;
@@ -262,7 +262,7 @@ void inline Join( TLink*apLink,TLink *apOther )
 		apLink->tail = apOther->tail;
 	}
 
-	apOther->head = apOther->tail = NULL;
+	apOther->head = apOther->tail = NULL;   //清理apOther中的头尾指针
 }
 
 /////////////////for copy stack //////////////////////////
@@ -314,11 +314,11 @@ struct stCoEpoll_t
 	int iEpollFd;                                   //EpollFd
 	static const int _EPOLL_SIZE = 1024 * 10;       //epoll_wait单次最大返回事件数量
 
-	struct stTimeout_t *pTimeout;                   //超时管理  TODO
+	struct stTimeout_t *pTimeout;                   //时间轮, 超时管理
 
-	struct stTimeoutItemLink_t *pstTimeoutList;
+	struct stTimeoutItemLink_t *pstTimeoutList;     //已超时项链表
 
-	struct stTimeoutItemLink_t *pstActiveList;          
+	struct stTimeoutItemLink_t *pstActiveList;      //已就绪项链表  
 
 	co_epoll_res *result;                           //epoll_wait结果
 
@@ -375,30 +375,36 @@ void FreeTimeout( stTimeout_t *apTimeout )
 	free( apTimeout->pItems );
 	free ( apTimeout );
 }
+
+/* 在时间轮中插入新项
+ * @param apTimeout :时间轮结构
+ * @param apItem    :新的超时项
+ * @param allNow    :当前事件(timestamp in ms)
+ */
 int AddTimeout( stTimeout_t *apTimeout,stTimeoutItem_t *apItem ,unsigned long long allNow )
 {
-	if( apTimeout->ullStart == 0 )
+	if( apTimeout->ullStart == 0 )  //未初始化apTimeout，进行初始化
 	{
 		apTimeout->ullStart = allNow;
 		apTimeout->llStartIdx = 0;
 	}
-	if( allNow < apTimeout->ullStart )
+	if( allNow < apTimeout->ullStart )  //防止插入到还未开始的时间轮中
 	{
 		co_log_err("CO_ERR: AddTimeout line %d allNow %llu apTimeout->ullStart %llu",
 					__LINE__,allNow,apTimeout->ullStart);
 
 		return __LINE__;
 	}
-	if( apItem->ullExpireTime < allNow )
+	if( apItem->ullExpireTime < allNow ) //防止插入永远不能触发的项
 	{
 		co_log_err("CO_ERR: AddTimeout line %d apItem->ullExpireTime %llu allNow %llu apTimeout->ullStart %llu",
 					__LINE__,apItem->ullExpireTime,allNow,apTimeout->ullStart);
 
 		return __LINE__;
 	}
-	unsigned long long diff = apItem->ullExpireTime - apTimeout->ullStart;
+	unsigned long long diff = apItem->ullExpireTime - apTimeout->ullStart;  //stTimeout_t中stTimeoutItemLink_t数组的偏移量
 
-	if( diff >= (unsigned long long)apTimeout->iItemSize )
+	if( diff >= (unsigned long long)apTimeout->iItemSize )  //偏移量最大为时间轮长度-1 
 	{
 		diff = apTimeout->iItemSize - 1;
 		co_log_err("CO_ERR: AddTimeout line %d diff %d",
@@ -406,7 +412,7 @@ int AddTimeout( stTimeout_t *apTimeout,stTimeoutItem_t *apItem ,unsigned long lo
 
 		//return __LINE__;
 	}
-	AddTail( apTimeout->pItems + ( apTimeout->llStartIdx + diff ) % apTimeout->iItemSize , apItem );
+	AddTail( apTimeout->pItems + ( apTimeout->llStartIdx + diff ) % apTimeout->iItemSize , apItem );    //根据llStartIdx和diff加入到对应的stTimeoutItemLink_t链中
 
 	return 0;
 }
@@ -422,7 +428,7 @@ inline void TakeAllTimeout( stTimeout_t *apTimeout,unsigned long long allNow,stT
 	{
 		return ;
 	}
-	int cnt = allNow - apTimeout->ullStart + 1;
+	int cnt = allNow - apTimeout->ullStart + 1; //本次扫描的stTimeoutItemLink_t个数(时间轮槽数)
 	if( cnt > apTimeout->iItemSize )
 	{
 		cnt = apTimeout->iItemSize;
@@ -809,7 +815,7 @@ void co_eventloop( stCoEpoll_t *ctx,pfn_co_eventloop_t pfn,void *arg )
 	{
 		ctx->result =  co_epoll_res_alloc( stCoEpoll_t::_EPOLL_SIZE );
 	}
-	co_epoll_res *result = ctx->result;
+	co_epoll_res *result = ctx->result; 
 
 
 	for(;;)
@@ -819,16 +825,16 @@ void co_eventloop( stCoEpoll_t *ctx,pfn_co_eventloop_t pfn,void *arg )
 		stTimeoutItemLink_t *active = (ctx->pstActiveList);
 		stTimeoutItemLink_t *timeout = (ctx->pstTimeoutList);
 
-		memset( timeout,0,sizeof(stTimeoutItemLink_t) );
+		memset( timeout,0,sizeof(stTimeoutItemLink_t) );                            //清空超时队列
 
-		for(int i=0;i<ret;i++)
+		for(int i=0;i<ret;i++)                                                      //遍历有事件的fd
 		{
-			stTimeoutItem_t *item = (stTimeoutItem_t*)result->events[i].data.ptr;
-			if( item->pfnPrepare )
+			stTimeoutItem_t *item = (stTimeoutItem_t*)result->events[i].data.ptr;   //获取event里数据指向的stTimeoutItem_t
+			if( item->pfnPrepare )                                                  //如果有预处理函数，执行，由其加入就绪列表
 			{
 				item->pfnPrepare( item,result->events[i],active );
 			}
-			else
+			else                                                                    //手动加入就绪列表
 			{
 				AddTail( active,item );
 			}
@@ -836,24 +842,24 @@ void co_eventloop( stCoEpoll_t *ctx,pfn_co_eventloop_t pfn,void *arg )
 
 
 		unsigned long long now = GetTickMS();
-		TakeAllTimeout( ctx->pTimeout,now,timeout );
+		TakeAllTimeout( ctx->pTimeout,now,timeout );                                //将超时项插入超时列表
 
 		stTimeoutItem_t *lp = timeout->head;
 		while( lp )
 		{
 			//printf("raise timeout %p\n",lp);
-			lp->bTimeout = true;
+			lp->bTimeout = true;                                                    //设置为超时
 			lp = lp->pNext;
 		}
 
-		Join<stTimeoutItem_t,stTimeoutItemLink_t>( active,timeout );
+		Join<stTimeoutItem_t,stTimeoutItemLink_t>( active,timeout );                //将超时列表合并入就绪列表
 
 		lp = active->head;
 		while( lp )
 		{
 
 			PopHead<stTimeoutItem_t,stTimeoutItemLink_t>( active );
-            if (lp->bTimeout && now < lp->ullExpireTime) 
+            if (lp->bTimeout && now < lp->ullExpireTime)                            //还未达到超时时间但已经标记为超时的，加回时间轮 
 			{
 				int ret = AddTimeout(ctx->pTimeout, lp, now);
 				if (!ret) 
@@ -863,14 +869,14 @@ void co_eventloop( stCoEpoll_t *ctx,pfn_co_eventloop_t pfn,void *arg )
 					continue;
 				}
 			}
-			if( lp->pfnProcess )
+			if( lp->pfnProcess )                                                    //调用stTimeoutItem_t项的执行函数
 			{
 				lp->pfnProcess( lp );
 			}
 
 			lp = active->head;
 		}
-		if( pfn )
+		if( pfn )                                                                   //用于用户控制跳出事件循环
 		{
 			if( -1 == pfn( arg ) )
 			{
@@ -1130,24 +1136,32 @@ static void OnSignalProcessEvent( stTimeoutItem_t * ap )
 }
 
 stCoCondItem_t *co_cond_pop( stCoCond_t *link );
+
+/*  通知一个等待在stCoCond_t上的条件变量项
+ *  @param si : 条件变量管理器
+ */
 int co_cond_signal( stCoCond_t *si )
 {
-	stCoCondItem_t * sp = co_cond_pop( si );
-	if( !sp ) 
+	stCoCondItem_t * sp = co_cond_pop( si );                                    //取出一个条件变量项
+	if( !sp )                                                                   
 	{
 		return 0;
 	}
-	RemoveFromLink<stTimeoutItem_t,stTimeoutItemLink_t>( &sp->timeout );
+	RemoveFromLink<stTimeoutItem_t,stTimeoutItemLink_t>( &sp->timeout );        //从时间轮中删除
 
-	AddTail( co_get_curr_thread_env()->pEpoll->pstActiveList,&sp->timeout );
+	AddTail( co_get_curr_thread_env()->pEpoll->pstActiveList,&sp->timeout );    //加入epoll就绪队列
 
 	return 0;
 }
+
+/*  通知所有等待在stCoCond_t上的条件变量项
+ *  @param si   : 条件变量管理器
+ */
 int co_cond_broadcast( stCoCond_t *si )
 {
 	for(;;)
 	{
-		stCoCondItem_t * sp = co_cond_pop( si );
+		stCoCondItem_t * sp = co_cond_pop( si );     
 		if( !sp ) return 0;
 
 		RemoveFromLink<stTimeoutItem_t,stTimeoutItemLink_t>( &sp->timeout );
@@ -1159,30 +1173,35 @@ int co_cond_broadcast( stCoCond_t *si )
 }
 
 
+/*  在stCoCond_t上增加一个条件变量项
+ *  @param link : 条件变量管理器
+ *  @param ms   : 超时时间(毫秒)
+ *  @return     : 0成功, 其他失败
+ */
 int co_cond_timedwait( stCoCond_t *link,int ms )
 {
 	stCoCondItem_t* psi = (stCoCondItem_t*)calloc(1, sizeof(stCoCondItem_t));   //分配一个stCoCondItem_t
-	psi->timeout.pArg = GetCurrThreadCo();                                      //设置pfnProcess参数为当前协程
-	psi->timeout.pfnProcess = OnSignalProcessEvent;                             //co_resume当前协程
+	psi->timeout.pArg = GetCurrThreadCo();                                      //设置超时调用函数参数为当前协程
+	psi->timeout.pfnProcess = OnSignalProcessEvent;                             //设置超时盗用函数为co_resume当前协程
 
 	if( ms > 0 )
 	{
 		unsigned long long now = GetTickMS();
 		psi->timeout.ullExpireTime = now + ms;                                  //设置超时时间戳
 
-		int ret = AddTimeout( co_get_curr_thread_env()->pEpoll->pTimeout,&psi->timeout,now );   //加入时间轮
+		int ret = AddTimeout( co_get_curr_thread_env()->pEpoll->pTimeout,&psi->timeout,now );   //将stCoCondItem_t的时间轮项插入主时间轮管理器
 		if( ret != 0 )
 		{
 			free(psi);
 			return ret;
 		}
 	}
-	AddTail( link, psi);
+	AddTail( link, psi);                                                        //将stCoCondItem_t加入条件变量管理器stCoCond_t
 
-	co_yield_ct();                                                              //让出cpu
+	co_yield_ct();                                                              //让出CPU, 切换至当前协程调用栈上一个协程, 再次回来时已经触发了该条件或超时
 
 
-	RemoveFromLink<stCoCondItem_t,stCoCond_t>( psi );
+	RemoveFromLink<stCoCondItem_t,stCoCond_t>( psi );                           //从stCoCond_t中删除
 	free(psi);
 
 	return 0;
