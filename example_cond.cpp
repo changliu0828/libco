@@ -68,7 +68,7 @@ void* Consumer(void* args)
 int main()
 {
 	stEnv_t* env = new stEnv_t;                             //stEnv_t 包含本示例使用的条件变量和任务队列
-	env->cond = co_cond_alloc();                            //创建条件变量
+	env->cond = co_cond_alloc();                            //分配条件变量实例
 
 	stCoRoutine_t* consumer_routine;                        //声明消费者协程结构
 	co_create(&consumer_routine, NULL, Consumer, env);      //创建消费者协程
@@ -78,6 +78,6 @@ int main()
 	co_create(&producer_routine, NULL, Producer, env);      //创建生产者协程
 	co_resume(producer_routine);                            //启动生产者协程
 	
-	co_eventloop(co_get_epoll_ct(), NULL, NULL);            //事件循环
+	co_eventloop(co_get_epoll_ct(), NULL, NULL);            //事件循环, 触发超时与epoll_wait
 	return 0;
 }

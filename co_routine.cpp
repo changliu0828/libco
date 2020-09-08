@@ -352,11 +352,11 @@ struct stTimeoutItemLink_t
 };
 struct stTimeout_t
 {
-	stTimeoutItemLink_t *pItems;
-	int iItemSize;
+	stTimeoutItemLink_t *pItems;    //时间轮链表数组
+	int iItemSize;                  //时间轮slot数
 
-	unsigned long long ullStart;
-	long long llStartIdx;
+	unsigned long long ullStart;    //开始时间戳(ms)
+	long long llStartIdx;           //pItems数组索引
 };
 stTimeout_t *AllocTimeout( int iSize )
 {
