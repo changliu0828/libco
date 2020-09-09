@@ -23,24 +23,24 @@
 coctx_swap:
 
 #if defined(__i386__)
-    movl 4(%esp), %eax              //eax = *(esp+4) 取第一个参数coctx_t
-    movl %esp,  28(%eax)            //esp = coctx_t.regs[7]
-    movl %ebp, 24(%eax)             //ebp = coctx_t.regs[6]
-    movl %esi, 20(%eax)             //esi = coctx_t.regs[5]
-    movl %edi, 16(%eax)             //edi = coctx_t.regs[4]
-    movl %edx, 12(%eax)             //edx = coctx_t.regs[3]
-    movl %ecx, 8(%eax)              //ecx = coctx_t.regs[2]
-    movl %ebx, 4(%eax)              //ebx = coctx_t.regs[1]
+    movl 4(%esp), %eax              ;eax = *(esp+4) 取第一个参数coctx_t
+    movl %esp,  28(%eax)            ;coctx_t.regs[7] = esp 
+    movl %ebp, 24(%eax)             ;coctx_t.regs[6] = ebp
+    movl %esi, 20(%eax)             ;coctx_t.regs[5] = esi
+    movl %edi, 16(%eax)             ;coctx_t.regs[4] = edi
+    movl %edx, 12(%eax)             ;coctx_t.regs[3] = edx
+    movl %ecx, 8(%eax)              ;coctx_t.regs[2] = ecx
+    movl %ebx, 4(%eax)              ;coctx_t.regs[1] = ebx
 
 
-    movl 8(%esp), %eax              //eax = *(esp+8) 取第二个参数coctx_t
-    movl 4(%eax), %ebx              //coctx_t.regs[1] = ebx
-    movl 8(%eax), %ecx              //coctx_t.regs[2] = ecx
-    movl 12(%eax), %edx             //coctx_t.regs[3] = edx           
-    movl 16(%eax), %edi             //coctx_t.regs[4] = edi
-    movl 20(%eax), %esi             //coctx_t.regs[5] = esi
-    movl 24(%eax), %ebp             //coctx_t.regs[6] = ebp
-    movl 28(%eax), %esp             //coctx_t.regs[7] = esp
+    movl 8(%esp), %eax              ;eax = *(esp+8) 取第二个参数coctx_t
+    movl 4(%eax), %ebx              ;ebx = coctx_t.regs[1] 
+    movl 8(%eax), %ecx              ;ecx = coctx_t.regs[2] 
+    movl 12(%eax), %edx             ;edx = coctx_t.regs[3]            
+    movl 16(%eax), %edi             ;edi = coctx_t.regs[4] 
+    movl 20(%eax), %esi             ;esi = coctx_t.regs[5] 
+    movl 24(%eax), %ebp             ;ebp = coctx_t.regs[6] 
+    movl 28(%eax), %esp             ;esp = coctx_t.regs[7] 
 
 	ret
 
