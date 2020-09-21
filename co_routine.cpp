@@ -480,7 +480,7 @@ struct stCoRoutine_t *co_create_env( stCoRoutineEnv_t * env, const stCoRoutineAt
 	{
 		memcpy( &at,attr,sizeof(at) );              //拷贝attr
 	}
-	if( at.stack_size <= 0 )                        //调整栈大小
+	if( at.stack_size <= 0 )                        //调整栈大小[0, 8M]
 	{
 		at.stack_size = 128 * 1024;             
 	}

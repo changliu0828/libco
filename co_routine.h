@@ -47,21 +47,37 @@ typedef void *(*pfn_co_routine_t)( void * );
 //2.co_routine
 
 /*  协程创建接口
- *  @co         :协程主结构体
- *  @attr       :协程可配置属性, 包括栈大小、共享栈地址
- *  @pfn        :协程调用函数
- *  @arg        :协程调用函数参数
+ *  @param
+ *  co          :协程主结构体二级指针
+ *  attr        :协程可配置属性, 包括栈大小、共享栈地址
+ *  pfn         :协程调用函数
+ *  arg         :协程调用函数参数
+ *  @return     :0
  */
 int 	co_create( stCoRoutine_t **co,const stCoRoutineAttr_t *attr,void *(*routine)(void*),void *arg );
 
-/* 协程切换接口
- * @co          :协程主结构体
- *
+/*  协程切回接口
+ *  @param
+ *  co          :协程主结构体指针
  */
 void    co_resume( stCoRoutine_t *co );
+
+/*  协程切出接口
+ *  @param
+ *  co          :协程主结构体指针
+ */
 void    co_yield( stCoRoutine_t *co );
+
+/* 当前协程切出接口
+ */
 void    co_yield_ct(); //ct = current thread
+
+/*  释放协程相关内存
+ *  @param
+ *  co          :协程主结构体指针
+ */
 void    co_release( stCoRoutine_t *co );
+
 void    co_reset(stCoRoutine_t * co); 
 
 stCoRoutine_t *co_self();

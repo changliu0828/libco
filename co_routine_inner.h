@@ -48,25 +48,25 @@ struct stShareStack_t                               //共享栈
 struct stCoRoutine_t
 {
 	stCoRoutineEnv_t *env;              //指向协程运行环境，各协程共享
-	pfn_co_routine_t pfn;               //指向执行函数  TODO
+	pfn_co_routine_t pfn;               //指向执行函数
 	void *arg;                          //执行函数参数
 	coctx_t ctx;                        //切换时保存上下文(寄存器)信息
 
 	char cStart;                        //是否开始，在调用co_resume时设置为1, co_reset时设置为0
-	char cEnd;                          //是否结束, TODO, co_reset时设置为0
+	char cEnd;                          //是否结束, co_reset时设置为0
 	char cIsMain;                       //是否为主协程, co_init_curr_thread_env中设置为1
-	char cEnableSysHook;                //是否hook系统调用 TODO
+	char cEnableSysHook;                //是否hook系统调用 
 	char cIsShareStack;                 //是否开启共享栈
 
 	void *pvEnv;                        //环境系统变量指针 TODO
 
-	//char sRunStack[ 1024 * 128 ];     //TODO
-	stStackMem_t* stack_mem;            //协程栈指针
+	//char sRunStack[ 1024 * 128 ];     
+	stStackMem_t* stack_mem;            //栈指针(私有栈/共享栈)
 
 
 	//save satck buffer while confilct on same stack_buffer;
-	char* stack_sp;                     //TODO 
-	unsigned int save_size;             //TODO
+	char* stack_sp;                     //TODO
+	unsigned int save_size;             //save_buffer大小
 	char* save_buffer;                  //用与co_swap切换出共享栈时，保存当前栈信息
 
 	stCoSpec_t aSpec[1024];             //TODO
