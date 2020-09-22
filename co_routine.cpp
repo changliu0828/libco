@@ -505,10 +505,10 @@ struct stCoRoutine_t *co_create_env( stCoRoutineEnv_t * env, const stCoRoutineAt
 	lp->arg = arg;
 
 	stStackMem_t* stack_mem = NULL;
-	if( at.share_stack )                            //共享栈模式
+	if( at.share_stack )                                //共享栈模式
 	{
-		stack_mem = co_get_stackmem( at.share_stack);   //TODO
-		at.stack_size = at.share_stack->stack_size;     //TODO
+		stack_mem = co_get_stackmem( at.share_stack);   
+		at.stack_size = at.share_stack->stack_size; 
 	}
 	else
 	{
@@ -654,7 +654,7 @@ void co_swap(stCoRoutine_t* curr, stCoRoutine_t* pending_co)
 {
  	stCoRoutineEnv_t* env = co_get_curr_thread_env();
 
-	//get curr stack sp                 //TODO
+	//get curr stack sp                 
 	char c;
 	curr->stack_sp= &c;
 

@@ -37,7 +37,7 @@ struct stStackMem_t                                 //单个共享栈           
 
 struct stShareStack_t                               //共享栈
 {
-	unsigned int alloc_idx;                         //共享栈数组索引 TODO
+	unsigned int alloc_idx;                         //共享栈数组索引 
 	int stack_size;                                 //单个共享栈大小
 	int count;                                      //共享栈个数
 	stStackMem_t** stack_array;                     //共享栈数组

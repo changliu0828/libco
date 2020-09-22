@@ -107,8 +107,8 @@ int coctx_init( coctx_t *ctx );
  * @param
  * ctx  :指向上下文结构体
  * pfn  :指向调用函数
- * s    ://TODO           
- * s1   ://TODO           
+ * s    :参数1
+ * s1   :参数2           
  */
 int coctx_make( coctx_t *ctx,coctx_pfn_t pfn,const void *s,const void *s1 );
 #endif
