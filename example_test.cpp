@@ -21,7 +21,7 @@ int main() {
     stCoRoutine_t* co_g;
 	co_create(&co_f, NULL, f, NULL); 
 	co_create(&co_g, NULL, g, NULL); 
-    for (int i = 0; i < 10; ++ i)
+    while(1)
     {
         co_resume(co_f);
         co_resume(co_g);
