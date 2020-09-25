@@ -55,8 +55,8 @@ struct stCoRoutineEnv_t
 	stCoEpoll_t *pEpoll;                //epoll封装
 
 	//for copy stack log lastco and nextco
-	stCoRoutine_t* pending_co;          //TODO
-	stCoRoutine_t* occupy_co;           //TODO
+	stCoRoutine_t* pending_co;           
+	stCoRoutine_t* occupy_co;           //当前协程
 };
 //int socket(int domain, int type, int protocol);
 void co_log_err( const char *fmt,... )
@@ -377,9 +377,11 @@ void FreeTimeout( stTimeout_t *apTimeout )
 }
 
 /* 在时间轮中插入新项
- * @param apTimeout :时间轮结构
- * @param apItem    :新的超时项
- * @param allNow    :当前事件(timestamp in ms)
+ * @param 
+ * apTimeout :时间轮结构
+ * apItem    :新的超时项
+ * allNow    :当前事件(timestamp in ms)
+ * @return   :0成功, else失败行数
  */
 int AddTimeout( stTimeout_t *apTimeout,stTimeoutItem_t *apItem ,unsigned long long allNow )
 {
@@ -416,6 +418,13 @@ int AddTimeout( stTimeout_t *apTimeout,stTimeoutItem_t *apItem ,unsigned long lo
 
 	return 0;
 }
+/* 在时间轮中插入新项
+ * @param 
+ * apTimeout:时间轮结构
+ * allNow   :当前时间(timestamp in ms)
+ * apResult :超时事件结果链表
+ */
+
 inline void TakeAllTimeout( stTimeout_t *apTimeout,unsigned long long allNow,stTimeoutItemLink_t *apResult )
 {
 	if( apTimeout->ullStart == 0 )
@@ -444,8 +453,6 @@ inline void TakeAllTimeout( stTimeout_t *apTimeout,unsigned long long allNow,stT
 	}
 	apTimeout->ullStart = allNow;
 	apTimeout->llStartIdx += cnt - 1;
-
-
 }
 static int CoRoutineFunc( stCoRoutine_t *co,void * )
 {

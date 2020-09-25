@@ -113,7 +113,7 @@ static void *poll_routine( void *arg )
 	vector<task_t> &v = *(vector<task_t>*)arg;
 	for(size_t i=0;i<v.size();i++)
 	{
-		int fd = CreateTcpSocket();
+		int fd = CreateTcpSocket(); //bind
 		SetNonBlock( fd );
 		v[i].fd = fd;
 
@@ -180,7 +180,7 @@ static void *poll_routine( void *arg )
 int main(int argc,char *argv[])
 {
 	vector<task_t> v;
-	for(int i=1;i<argc;i+=2)
+	for(int i=1;i<argc;i+=2)    //根据参数设置各个task.addr
 	{
 		task_t task = { 0 };
 		SetAddr( argv[i],atoi(argv[i+1]),task.addr );

@@ -65,7 +65,7 @@ struct stCoRoutine_t
 
 
 	//save satck buffer while confilct on same stack_buffer;
-	char* stack_sp;                     //TODO
+	char* stack_sp;                     //共享栈顶
 	unsigned int save_size;             //save_buffer大小
 	char* save_buffer;                  //用与co_swap切换出共享栈时，保存当前栈信息
 

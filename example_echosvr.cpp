@@ -84,7 +84,7 @@ static void *readwrite_routine( void *arg )
 		{
 			struct pollfd pf = { 0 };
 			pf.fd = fd;
-			pf.events = (POLLIN|POLLERR|POLLHUP);
+			pf.events = (POLLIN|POLLERR|POLLHUP);   //可读|错误|挂起
 			co_poll( co_get_epoll_ct(),&pf,1,1000);
 
 			int ret = read( fd,buf,sizeof(buf) );
@@ -111,7 +111,7 @@ static void *accept_routine( void * )
 	fflush(stdout);
 	for(;;)
 	{
-		//printf("pid %ld g_readwrite.size %ld\n",getpid(),g_readwrite.size());
+		printf("pid %ld g_readwrite.size %ld\n",getpid(),g_readwrite.size());
 		if( g_readwrite.empty() )
 		{
 			printf("empty\n"); //sleep
@@ -232,6 +232,7 @@ int main(int argc,char *argv[])
 		{
 			break;
 		}
+        //child process
 		for(int i=0;i<cnt;i++)
 		{
 			task_t * task = (task_t*)calloc( 1,sizeof(task_t) );
